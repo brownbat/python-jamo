@@ -12,6 +12,7 @@ from sys import stderr
 from itertools import chain
 import re
 import unicodedata
+import json
 
 
 _ROOT = os.path.abspath(os.path.dirname(__file__))
@@ -20,6 +21,13 @@ _JAMO_OFFSET = 44032
 _JAMO_LEAD_OFFSET = 0x10ff
 _JAMO_VOWEL_OFFSET = 0x1160
 _JAMO_TAIL_OFFSET = 0x11a7
+
+with open(os.path.join(_ROOT, 'data', "U+11xx.json"), 'r') as namedata:
+    _JAMO_DECOMPOSITION = json.load(namedata)
+_JAMO_COMPOSITION = {name: char for char, name in _JAMO_DECOMPOSITION.items()}
+
+hex_components_dictionary = _JAMO_DECOMPOSITION
+
 
 JAMO_LEADS = [chr(_) for _ in range(0x1100, 0x115F)]
 JAMO_LEADS_MODERN = [chr(_) for _ in range(0x1100, 0x1113)]
@@ -39,119 +47,6 @@ valid_extA = (chr(_) for _ in range(0xa960, 0xa97d))
 valid_extB = chain((chr(_) for _ in range(0xd7b0, 0xd7c7)),
                    (chr(_) for _ in range(0xd7cb, 0xd7fc)))
 valid_hangul = [chr(_) for _ in range(0xac00, 0xd7a4)]
-
-valid_all_hangul_and_jamo = chain(valid_jamo, valid_hcj, valid_extA,
-                                  valid_extB, valid_hangul)
-
-hex_components_dictionary = {}
-with open(os.path.join(_ROOT, "data", "AuxiliaryHangulDecompositions.txt"),
-          encoding="UTF-8") as file_decompositions:
-    for line in file_decompositions:
-        if line[0] in '13':  # All aux decomps begin with '1xxx;' or '3xxx;'
-            line_list = line.split()
-            line_list[0] = line_list[0][:-1]  # trim semicolon
-            truncated_list = line_list[:line_list.index('#')]  # trim comment
-            # match string format of unicode.decomposition
-            hex_components_dictionary[truncated_list[0]] =\
-                " ".join(truncated_list[1:])
-
-            #  WARNING: some lines decompose into three or four characters
-            #  3200-320D,
-            #  WARNING: some decompositions are commented out!
-            #  320E-321C
-            #  unicodedata.decomposition() should handle those cases
-
-# Hangul letters
-JAMO_DOUBLE_CONSONANTS_MODERN = ["ㄲ", "ㄸ", "ㅃ", "ㅆ", "ㅉ"]
-JAMO_CONSONANT_CLUSTERS_MODERN = ["ㄳ", "ㄵ", "ㄶ", "ㄺ", "ㄻ", "ㄼ", "ㄽ", "ㄾ",
-                                  "ㄿ", "ㅀ", "ㅄ"]
-JAMO_DIPTHONGS_MODERN = ["ㅘ", "ㅙ", "ㅚ", "ㅝ", "ㅞ", "ㅟ", "ㅢ"]
-
-# Positional forms
-JAMO_POSITIONAL_DOUBLE_CONSONANTS = [
-        "ᄁ", "ᄄ", "ᄈ", "ᄊ", "ᄍ", "ᄔ", "ᄙ", "ᄥ", "ᄬ", "ᄴ", "ᄽ", "ᄿ",
-        "ᅇ", "ᅏ", "ᅑ", "ᅘ", "ᆢ", "ᆩ", "ᆻ", "ᇐ", "ᇖ", "ᇞ", "ᇭ", "ᇮ",
-        "ᇿ"]
-JAMO_POSITIONAL_CLUSTERS = [
-        "ᄓ", "ᄕ", "ᄖ", "ᄗ", "ᄘ", "ᄚ", "ᄜ", "ᄞ", "ᄟ", "ᄠ", "ᄡ", "ᄢ",
-        "ᄣ", "ᄤ", "ᄥ", "ᄦ", "ᄧ", "ᄨ", "ᄩ", "ᄪ", "ᄭ", "ᄮ", "ᄯ", "ᄰ",
-        "ᄱ", "ᄲ", "ᄳ", "ᄴ", "ᄵ", "ᄶ", "ᄷ", "ᄸ", "ᄹ", "ᄺ", "ᄻ", "ᅁ",
-        "ᅂ", "ᅃ", "ᅄ", "ᅅ", "ᅆ", "ᅈ", "ᅉ", "ᅊ", "ᅋ", "ᅍ", "ᅒ", "ᅓ",
-        "ᅖ", "ᅚ", "ᅛ", "ᅜ", "ᅝ", "ᅞ", "ᅶ", "ᅷ", "ᅸ", "ᅹ", "ᅺ", "ᅻ",
-        "ᅼ", "ᅽ", "ᅾ", "ᅿ", "ᆀ", "ᆁ", "ᆂ", "ᆃ", "ᆄ", "ᆅ", "ᆆ", "ᆇ",
-        "ᆈ", "ᆉ", "ᆊ", "ᆋ", "ᆌ", "ᆍ", "ᆎ", "ᆏ", "ᆐ", "ᆑ", "ᆒ", "ᆓ",
-        "ᆔ", "ᆕ", "ᆖ", "ᆗ", "ᆘ", "ᆙ", "ᆚ", "ᆛ", "ᆜ", "ᆝ", "ᆟ", "ᆠ",
-        "ᆡ", "ᆣ", "ᆤ", "ᆥ", "ᆦ", "ᆧ", "ᆪ", "ᆬ", "ᆭ", "ᆰ", "ᆱ", "ᆲ",
-        "ᆳ", "ᆴ", "ᆵ", "ᆶ", "ᆹ", "ᇃ", "ᇄ", "ᇅ", "ᇆ", "ᇇ", "ᇈ", "ᇉ",
-        "ᇊ", "ᇋ", "ᇌ", "ᇍ", "ᇎ", "ᇏ", "ᇑ", "ᇒ", "ᇓ", "ᇔ", "ᇕ", "ᇖ",
-        "ᇗ", "ᇘ", "ᇙ", "ᇚ", "ᇛ", "ᇜ", "ᇝ", "ᇞ", "ᇟ", "ᇠ", "ᇡ", "ᇣ",
-        "ᇤ", "ᇥ", "ᇧ", "ᇨ", "ᇩ", "ᇪ", "ᇬ", "ᇭ", "ᇯ", "ᇱ", "ᇲ", "ᇳ",
-        "ᇵ", "ᇶ", "ᇷ", "ᇸ", "ᇺ", "ᇻ", "ᇼ", "ᇽ", "ᇾ"]
-JAMO_POSITIONAL_DIPTHONGS = [
-        "ᅪ", "ᅫ", "ᅯ", "ᅰ", "ᅱ", "ᄛ", "ᄝ", "ᄫ", "ᄬ", "ᅗ", "ᇕ", "ᇢ",
-        "ᇦ", "ᇴ", "ᅙ", "ᇙ", "ᇹ", "ᅬ", "ᅴ", "ᆗ"]
-JAMO_POSITIONAL_COMPOUNDS = JAMO_POSITIONAL_DOUBLE_CONSONANTS +\
-                            JAMO_POSITIONAL_CLUSTERS +\
-                            JAMO_POSITIONAL_DIPTHONGS
-
-JAMO_POSITIONAL_COMPOUNDS.extend([
-        'ᄁ', 'ᄄ', 'ᄈ', 'ᄊ', 'ᄍ', 'ᄔ', 'ᄕ', 'ᄙ', 'ᄚ', 'ᄛ', 'ᄜ', 'ᄝ',
-        'ᄞ', 'ᄠ', 'ᄡ', 'ᄢ', 'ᄣ', 'ᄧ', 'ᄩ', 'ᄫ', 'ᄬ', 'ᄭ', 'ᄮ', 'ᄯ',
-        'ᄲ', 'ᄶ', 'ᄽ', 'ᄿ', 'ᅇ', 'ᅏ', 'ᅑ', 'ᅗ', 'ᅘ', 'ᅙ', 'ᅚ', 'ᅛ',
-        'ᅜ', 'ᅝ', 'ᅞ', 'ᅪ', 'ᅫ', 'ᅬ', 'ᅯ', 'ᅰ', 'ᅱ', 'ᅴ', 'ᅶ', 'ᆄ',
-        'ᆅ', 'ᆈ', 'ᆑ', 'ᆒ', 'ᆔ', 'ᆡ', 'ᆣ', 'ᆤ', 'ᆥ', 'ᆦ', 'ᆧ', 'ᆩ',
-        'ᆪ', 'ᆬ', 'ᆭ', 'ᆰ', 'ᆱ', 'ᆲ', 'ᆳ', 'ᆴ', 'ᆵ', 'ᆶ', 'ᆹ', 'ᆻ',
-        'ᇅ', 'ᇆ', 'ᇇ', 'ᇈ', 'ᇊ', 'ᇌ', 'ᇍ', 'ᇎ', 'ᇐ', 'ᇓ', 'ᇗ', 'ᇙ',
-        'ᇜ', 'ᇝ', 'ᇟ', 'ᇢ', 'ᇤ', 'ᇦ', 'ᇧ', 'ᇨ', 'ᇩ', 'ᇪ', 'ᇮ', 'ᇱ',
-        'ᇲ', 'ᇳ', 'ᇴ', 'ᇹ', 'ᇺ', 'ᇻ', 'ᇼ', 'ᇽ', 'ᇾ', 'ᇿ', 'ㅥ',
-        'ㅱ', 'ㅸ', 'ㅹ', 'ㆀ', 'ㆄ', 'ㆅ', 'ㆆ', 'ꥠ', 'ꥡ', 'ꥢ', 'ꥣ',
-        'ꥤ', 'ꥥ', 'ꥦ', 'ꥧ', 'ꥨ', 'ꥩ', 'ꥪ', 'ꥫ', 'ꥬ', 'ꥭ',
-        'ꥮ', 'ꥯ', 'ꥰ', 'ꥱ', 'ꥲ', 'ꥳ', 'ꥴ', 'ꥵ', 'ꥶ', 'ꥷ',
-        'ꥸ', 'ꥹ', 'ꥺ', 'ꥻ', 'ꥼ', 'ힰ', 'ힱ', 'ힲ', 'ힳ', 'ힴ',
-        'ힵ', 'ힶ', 'ힷ', 'ힸ', 'ힹ', 'ힺ', 'ힻ', 'ힼ', 'ힽ', 'ힾ',
-        'ힿ', 'ퟀ', 'ퟁ', 'ퟂ', 'ퟃ', 'ퟄ', 'ퟅ', 'ퟆ', 'ퟋ', 'ퟌ',
-        'ퟍ', 'ퟎ', 'ퟏ', 'ퟐ', 'ퟑ', 'ퟒ', 'ퟓ', 'ퟔ', 'ퟕ', 'ퟖ',
-        'ퟗ', 'ퟘ', 'ퟙ', 'ퟚ', 'ퟛ', 'ퟜ', 'ퟝ', 'ퟞ', 'ퟟ', 'ퟠ',
-        'ퟡ', 'ퟢ', 'ퟣ', 'ퟤ', 'ퟥ', 'ퟦ', 'ퟧ', 'ퟨ', 'ퟩ', 'ퟪ',
-        'ퟫ', 'ퟬ', 'ퟭ', 'ퟮ', 'ퟯ', 'ퟰ', 'ퟱ', 'ퟲ', 'ퟳ', 'ퟴ',
-        'ퟵ', 'ퟶ', 'ퟷ', 'ퟸ', 'ퟹ', 'ퟺ', 'ퟻ'])
-
-JAMO_COMPOUNDS_MODERN = JAMO_DOUBLE_CONSONANTS_MODERN +\
-                        JAMO_CONSONANT_CLUSTERS_MODERN + JAMO_DIPTHONGS_MODERN
-JAMO_COMPOUNDS_MODERN_DICTIONARY = {
-        "ㄲ": ("ㄱ", "ㄱ"), "ㄸ": ("ㄷ", "ㄷ"), "ㅃ": ("ㅂ", "ㅂ"),
-        "ㅆ": ("ㅅ", "ㅅ"), "ㅉ": ("ㅈ", "ㅈ"), "ㄳ": ("ㄱ", "ㅅ"),
-        "ㄵ": ("ㄴ", "ㅈ"), "ㄶ": ("ㄴ", "ㅎ"), "ㄺ": ("ㄹ", "ㄱ"),
-        "ㄻ": ("ㄹ", "ㅁ"), "ㄼ": ("ㄹ", "ㅂ"), "ㄽ": ("ㄹ", "ㅅ"),
-        "ㄾ": ("ㄹ", "ㅌ"), "ㄿ": ("ㄹ", "ㅍ"), "ㅀ": ("ㄹ", "ㅎ"),
-        "ㅄ": ("ㅂ", "ㅅ"), "ㅘ": ("ㅗ", "ㅏ"), "ㅙ": ("ㅗ", "ㅐ"),
-        "ㅚ": ("ㅗ", "ㅣ"), "ㅝ": ("ㅜ", "ㅓ"), "ㅞ": ("ㅜ", "ㅔ"),
-        "ㅟ": ("ㅜ", "ㅣ"), "ㅢ": ("ㅡ", "ㅣ")}
-
-JAMO_DOUBLE_CONSONANTS_ARCHAIC = ["ㅥ", "ᄙ", "ㅹ", "ᄽ", "ᄿ", "ᅇ", "ᇮ", "ᅏ",
-                                  "ᅑ", "ㆅ"]
-JAMO_TWO_CONSONANT_CLUSTERS_ARCHAIC = [
-        "ᇃ", "ᄓ", "ㅦ", "ᄖ", "ㅧ", "ㅨ", "ᇉ", "ᄗ", "ᇋ", "ᄘ", "ㅪ", "ㅬ",
-        "ᇘ", "ㅭ", "ᇚ", "ᇛ", "ㅮ", "ㅯ", "ㅰ", "ᇠ", "ᇡ", "ㅲ", "ᄟ", "ㅳ",
-        "ᇣ", "ㅶ", "ᄨ", "ㅷ", "ᄪ", "ᇥ", "ㅺ", "ㅻ", "ㅼ", "ᄰ", "ᄱ", "ㅽ",
-        "ᄵ", "ㅾ", "ᄷ", "ᄸ", "ᄹ", "ᄺ", "ᄻ", "ᅁ", "ᅂ", "ᅃ", "ᅄ", "ᅅ",
-        "ᅆ", "ᅈ", "ᅉ", "ᅊ", "ᅋ", "ᇬ", "ᇭ", "ㆂ", "ㆃ", "ᇯ", "ᅍ", "ᅒ",
-        "ᅓ", "ᅖ", "ᇵ", "ᇶ", "ᇷ", "ᇸ"]
-JAMO_THREE_CONSONANT_CLUSTERS_ARCHAIC = ["ᇄ", "ㅩ", "ᇏ", "ᇑ", "ᇒ", "ㅫ",
-                                         "ᇔ", "ᇕ", "ᇖ", "ᇞ", "ㅴ", "ㅵ",
-                                         "ᄤ", "ᄥ", "ᄦ", "ᄳ", "ᄴ"]
-JAMO_CONSONANT_CLUSTERS_ARCHAIC = JAMO_TWO_CONSONANT_CLUSTERS_ARCHAIC +\
-                                  JAMO_THREE_CONSONANT_CLUSTERS_ARCHAIC
-JAMO_DIPTHONGS_ARCHAIC = [
-        "ᆜ", "ᆝ", "ᆢ", "ᅷ", "ᅸ", "ᅹ", "ᅺ", "ᅻ", "ᅼ", "ᅽ", "ᅾ", "ᅿ",
-        "ᆀ", "ᆁ", "ᆂ", "ᆃ", "ㆇ", "ㆈ", "ᆆ", "ᆇ", "ㆉ", "ᆉ", "ᆊ", "ᆋ",
-        "ᆌ", "ᆍ", "ᆎ", "ᆏ", "ᆐ", "ㆊ", "ㆋ", "ᆓ", "ㆌ", "ᆕ", "ᆖ", "ᆗ",
-        "ᆘ", "ᆙ", "ᆚ", "ᆛ", "ᆟ", "ᆠ", "ㆎ"]
-JAMO_COMPOUNDS_ARCHAIC = JAMO_CONSONANT_CLUSTERS_ARCHAIC +\
-                         JAMO_DOUBLE_CONSONANTS_ARCHAIC +\
-                         JAMO_DIPTHONGS_ARCHAIC
-JAMO_COMPOUNDS = JAMO_COMPOUNDS_MODERN + JAMO_COMPOUNDS_ARCHAIC
-
 
 class InvalidJamoError(Exception):
     """jamo is a U+11xx codepoint."""
@@ -621,30 +516,3 @@ def synth_hangul(string):
     """Convert jamo characters in a string into hcj as much as possible."""
     raise NotImplementedError
     return ''.join([''.join(''.join(jamo_to_hcj(_)) for _ in string)])
-
-
-# {
-#   "\u3131": ["\u1101", "\u3232"],
-# }
-
-out = "{\n"
-for c in valid_all_hangul_and_jamo:
-    try:
-        bits = decompose_jamo(c, verbose=True)
-        out += "  " + '"\\u' + str(hex(ord(c)))[2:] + '": '
-        for idx, bit in enumerate(bits):
-            if bit[0] == '<':
-                strbit = '"' + bit + '"'
-            else:
-                strbit = '"\\u' + str(hex(ord(bit)))[2:] + '"'
-            if idx == 0:
-                out += '['
-            out += strbit
-            if idx < len(bits) - 1:
-                out += ', '
-            if idx == len(bits) - 1:
-                out += '],\n'
-    except InvalidJamoError:
-        pass # print(hex(ord(c)))
-out += "}"
-print(out)
